@@ -1,0 +1,36 @@
+# dbName
+dbName : 'template.db'
+# template table
+Class:
+  tableName : 'Class'
+  # template element
+  StudentID:
+    elementName : 'StudentID'
+    elementType : 'int'
+    columnName  : 'INT'
+    otherKW     : 'PRIMARY KEY'
+    foreignKey:
+      table: 'Student'
+      name:  'StudentID'
+  Grade:
+    nargs       : 5
+    elementName : 'Grade'
+    elementType : 'int'
+    columnName  : 'INT'
+    otherKW     : 'NOT NULL'
+Student:
+  tableName : 'Student'
+  # template element
+  StudentID:
+    elementName : 'StudentID'
+    elementType : 'int'
+    columnName  : 'INT'
+    otherKW     : 'PRIMARY KEY'
+  FNAME:
+    elementName : 'FirstName'
+    elementType : 'str'
+    columnName  : 'VARCHAR'
+  LNAME:
+    elementName : 'LastName'
+    elementType : 'str'
+    columnName  : 'VARCHAR'
