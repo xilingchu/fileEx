@@ -1,0 +1,128 @@
+dbName : '~/.fileEx/wos_article.db'
+# Set the tables
+Article:
+  tableName: 'Article'
+  # Set the elements in the table
+  uid:
+    elementName: 'UID'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+    otherKW:     'PRIMARY KEY'
+  title:
+    elementName: 'TITLE'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+    otherKW:     'NOT NULL'
+  pubyear:
+    elementName: 'PUBYEAR'
+    elementType: 'int'
+    columnName:  'INT'
+  begin:
+    elementName: 'BEGIN'
+    elementType: 'int'
+    columnName:  'INT'
+  end:
+    elementName: 'END'
+    elementType: 'int'
+    columnName:  'INT'
+  page_count:
+    elementName: 'PAGES'
+    elementType: 'int'
+    columnName:  'INT'
+  vol:
+    elementName: 'VOL'
+    elementType: 'int'
+    columnName:  'INT'
+  journal:
+    elementName: 'JOURNAL'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+    foreignKey:
+      table: Journal
+      name:  Journal
+  author:
+    nargs:    10
+    elementName: 'AUTHOR'
+    elementType: 'int'
+    columnName:  'INT'
+    foreignKey:
+      table: Author
+      name:  Unique_id
+  keywords:
+    elementName: 'KEYWORDS'
+    elementType: 'str'
+    columnName:  'TEXT'
+  abstract:
+    elementName: 'ABSTRACT'
+    elementType: 'str'
+    columnName:  'TEXT'
+  doi:
+    elementName: 'DOI'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+  path:
+    elementName: 'PATH'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+Author:
+  tableName: 'Author'
+  unique_id:
+    elementName: 'Unique_id'
+    elementType: 'int'
+    columnName:  'INT'
+    otherKW:     'PRIMARY KEY'
+  full_name:
+    elementName: 'FullName'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+    otherKW:     'NOT NULL'
+  first_name:
+    elementName: 'FirstName'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+  last_name:
+    elementName: 'LastName'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+Journal:
+  tableName: 'Journal'
+  journal:
+    elementName: 'Journal'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+    otherKW:     'PRIMARY KEY'
+  source_abbrev:
+    elementName: 'source_abbrev'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+  abbrev_iso:
+    elementName: 'abbrev_iso'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+  abbrev_11:
+    elementName: 'abbrev_11'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+  abbrev_29:
+    elementName: 'abbrev_29'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+Link:
+  tableName: 'Link'
+  article:
+    elementName: 'article'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+    foreignKey:
+      table: Article
+      name:  UID
+  citedarticle:
+    elementName: 'cited_article'
+    elementType: 'str'
+    columnName:  'VARCHAR'
+    foreignKey:
+      table: Article
+      name:  UID
+  constrain:
+  - 'article'
+  - 'cited_article'

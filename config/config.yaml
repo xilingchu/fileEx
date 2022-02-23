@@ -1,0 +1,4 @@
+wos:
+  sid_path: '~/.config/fileEx/wos/sid'
+  sql_path: '~/.config/fileEx/wos/wos.yaml'
+  viewer: zathura
