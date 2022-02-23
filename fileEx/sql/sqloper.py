@@ -1,4 +1,5 @@
-from sqltype import sqlDB
+from fileEx.sql.sqltype import sqlDB
+from fileEx.utils.path import path
 import sqlite3 as sql
 import yaml
 import sys
@@ -9,10 +10,12 @@ class metaSql(type):
             return type.__new__(cls, name, bases, attrs)
         if 'config' not in attrs.keys():
             raise Exception('Config file is needed in attributes.')
-        _config_file = open(attrs['config'], 'r')
-        _config = yaml.load(_config_file, Loader=yaml.FullLoader)
+        _config_file = path(attrs['config'])
+        _config = open(_config_file, 'r')
+        _config = yaml.load(_config, Loader=yaml.FullLoader)
         attrs['db'] = sqlDB(**_config)
         return type.__new__(cls, name, bases, attrs)
+
 
 class operSQL(metaclass=metaSql):
     def __init__(self):
@@ -30,7 +33,7 @@ class operSQL(metaclass=metaSql):
         def wrapper(self, *args, **kwargs):
             _commit = func(self, *args, **kwargs)
             _commit += ';'
-            print(_commit)
+            # print(_commit)
             self.c.execute(_commit)
             self.conn.commit()
         return wrapper
@@ -39,13 +42,13 @@ class operSQL(metaclass=metaSql):
     def _order(func):
         def wrapper(self, table, **kwargs):
             # 'order' will be a list which contains keys you wanna ordered.
-            if 'where' in kwargs.keys():
+            if 'order' in kwargs.keys():
                 self.db._check_table(table)
                 _table = getattr(self.db, table)
                 _order = kwargs['order']
-                _str_order = ' ORDERED BY '
-                wherelist  = _table._check_keys(_order)
-                _str_order += ','.join(wherelist)
+                _str_order = ' ORDER BY '
+                orderlist  = _table._check_keys(_order)
+                _str_order += ','.join(orderlist)
                 kwargs.pop('order')
                 return func(self, table, **kwargs)+_str_order
             else:
@@ -73,11 +76,29 @@ class operSQL(metaclass=metaSql):
                     _str_where = ' WHERE '
                     wherelist  = []
                     for key, value in _where.items():
-                        _key, _value = _table._check_element(key, value['value'])
-                        if type(_value) is not list:
-                            _value = [_value]
-                        wherelist.append('%s %s %s'%(_key, value['oper'], ' AND '.join(_value)))
-                    _str_where += ' OR '.join(wherelist)
+                        if 'n' + key in _table.elementlist:
+                            nkey      = getattr(_table, 'n'+key).__nargs__
+                            _key, _value = _table._check_element(key+'1', value['value'])
+                            _key = _key[:-1]
+                            if type(_value) is not list:
+                                _value = [_value]
+                            for svalue in _value:
+                                nkey_list = []
+                                for i in range(nkey):
+                                    nkey_list.append('%s %s %s'%(_key+str(i+1), value['oper'], svalue))
+                                str_nkey = '( %s )'%(' OR '.join(nkey_list))
+                                wherelist.append(str_nkey)
+                        else:
+                            _key, _value = _table._check_element(key, value['value'])
+                            if type(_value) is not list:
+                                _value = [_value]
+                            if value['oper'].lower() == 'between':
+                                wherelist.append('%s %s %s'%(_key, value['oper'], ' AND '.join(_value)))
+                            if value['oper'].lower() == 'in':
+                                wherelist.append('%s %s (%s)'%(_key, value['oper'], *_value))
+                            else:
+                                wherelist.append('%s %s %s'%(_key, value['oper'], ' AND '.join(_value)))
+                    _str_where += ' AND '.join(wherelist)
                     kwargs.pop('where')
                     return func(self, table, **kwargs)+_str_where
                 else:
@@ -99,6 +120,9 @@ class operSQL(metaclass=metaSql):
                     _key_info = _element.__foreignKey__
                     _foreign_list.append('FOREIGN KEY(%s) REFERENCES %s(%s) ON UPDATE CASCADE'
                                         % (_element.__elementName__, _key_info['table'], _key_info['name']))
+            if hasattr(_table, '__constrain__'):
+                constrain = 'UNIQUE(%s)'%', '.join(_table.__constrain__)
+                _element_list.append(constrain)
             create_str += ',\n'.join(_element_list+_foreign_list)
             create_str += ');'
             print('Table %s are created!'%(_table.__tableName__))
@@ -161,13 +185,6 @@ class operSQL(metaclass=metaSql):
             _str_select = 'SELECT %s FROM %s' % (','.join(keylist), table)
         return _str_select
 
-testOper2 = type('testOper2', (operSQL,), {'config': 'test.yaml'})
-        
-if __name__ == '__main__':
-    a = testOper2()
-    a.create()
-    # a.insert('Student', StudentID=11309040, FNAME='Jialing', LNAME='Li', test=123)
-    a.update('Student', LNAME='Xi')# , where={'LNAME':{'oper':'==', 'value':'Li'}})
-    a.select('Student')
-    print(a.c.fetchall())
-    # a.delete('Student', where={'LNAME':{'oper':'==', 'value':'Xi'}})
+    def query(self, table, **kwargs):
+        self.select(table, **kwargs)
+        return self.c.fetchall()

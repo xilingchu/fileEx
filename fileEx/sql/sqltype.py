@@ -1,4 +1,5 @@
 from fileEx.utils.utils import indent
+from fileEx.utils.path  import path
 # The class of the Element in sql
 class sqlElement(object):
     def __init__(self, **kwargs):
@@ -36,11 +37,15 @@ class sqlTable(object):
             raise Exception('The table name is must in the SQL table.')
         self.__tableName__ = kwargs['tableName']
         kwargs.pop('tableName')
+        if 'constrain' in kwargs.keys():
+            self.__constrain__ = kwargs['constrain']
+            kwargs.pop('constrain')
         self.elementlist = []
         self.nelementlist = []
         for key, value in kwargs.items():
             if 'nargs' in value:
                 setattr(self, 'n'+key, sqlElement(**{'elementType':'int', 'elementName':'n'+value['elementName'], 'columnName':'INT'}))
+                setattr(getattr(self, 'n'+key), '__nargs__', int(value['nargs']))
                 self.elementlist.append('n'+key)
                 self.nelementlist.append(key)
                 for _nkey in range(int(value['nargs'])):
@@ -62,7 +67,7 @@ class sqlTable(object):
         def _check_element_value(value):
             # Judge if the type of the element is correct
             if type(value) != _element.__elementType__:
-                raise Exception('ERROR: The insert type is not correct in the table!')
+                raise Exception('ERROR: The %s type is not correct in the table!'%_element.__elementName__)
             if type(value) == str:
                 _value = '\'%s\''%(value)
             else:
@@ -87,21 +92,31 @@ class sqlTable(object):
 
     def _check_keys(self, keylist:list):
         # Judge if the element in the table
+        _keylist = []
         for key in keylist:
-            if key not in self.elementlist:
+            if 'n'+key in self.elementlist:
+                nkey   = getattr(self, 'n'+key)
+                nkey_n = nkey.__nargs__
+                _keylist.append(nkey.__elementName__)
+                for i in range(nkey_n):
+                    _element = getattr(self, key+str(i+1))
+                    _keylist.append(_element.__elementName__)
+            elif key not in self.elementlist:
                 print('Warining: The key %s is not in the table'%(key))
                 print(self.elementlist)
                 keylist.remove(key)
-        return keylist
-
-        
+            else:
+                _element = getattr(self, key)
+                _keylist.append(_element.__elementName__)
+        return _keylist
 
 class sqlDB(object):
     def __init__(self, **kwargs):
         # The table name is must in the keywords.
         if 'dbName' not in list(kwargs.keys()):
             raise Exception('The database name is must in the SQL database.')
-        self.__dbName__ = kwargs['dbName']
+        kwargs['dbName'] = path(kwargs['dbName'])
+        self.__dbName__  = kwargs['dbName']
         kwargs.pop('dbName')
         self.tablelist = []
         for key, value in kwargs.items():
