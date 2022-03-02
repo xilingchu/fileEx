@@ -1,5 +1,5 @@
-from fileEx.sql.sqltype import sqlDB
-from fileEx.utils.path import path
+from fileEM.sql.sqltype import sqlDB
+from fileEM.utils.path import path
 import sqlite3 as sql
 import yaml
 import sys

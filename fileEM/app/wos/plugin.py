@@ -1,4 +1,4 @@
-from fileEx.app.wos.wosSQL import wosOper, artprint
+from fileEM.app.wos.wosSQL import wosOper, artprint
 from argparse import ArgumentParser as ap
 from pathlib import Path
 import sys

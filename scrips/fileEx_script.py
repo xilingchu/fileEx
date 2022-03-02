@@ -1,8 +1,8 @@
 #! /usr/bin/python
 import yaml
 from argparse import ArgumentParser as ap
-from fileEx import app
-from fileEx.utils.path import path
+from fileEM import app
+from fileEM.utils.path import path
 import sys
 
 config_path = path('/home/xlc/.config/fileEx/config.yaml')

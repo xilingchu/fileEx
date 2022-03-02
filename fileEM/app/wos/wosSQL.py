@@ -1,7 +1,7 @@
-from fileEx.sql.sqloper import operSQL
-from fileEx.app.wos.client import wosClient
-from fileEx.app.wos.xml2dict import translateQuery, translateCited
-from fileEx.utils.path import path
+from fileEM.sql.sqloper import operSQL
+from fileEM.app.wos.client import wosClient
+from fileEM.app.wos.xml2dict import translateQuery, translateCited
+from fileEM.utils.path import path
 from pathlib import Path
 import sqlite3
 import time
