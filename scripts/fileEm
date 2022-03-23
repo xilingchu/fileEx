@@ -1,11 +1,15 @@
 #! /usr/bin/python
 import yaml
+from pathlib import Path
 from argparse import ArgumentParser as ap
 from fileEM import app
+from fileEM import __path__ as config_prefix
 from fileEM.utils.path import path
 import sys
 
-config_path = path('/home/xlc/.config/fileEx/config.yaml')
+config_prefix = config_prefix[0]
+
+config_path = Path(config_prefix + '/config/config.yaml')
 
 def main():
     config    = open(config_path, 'r')
