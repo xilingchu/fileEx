@@ -1,0 +1,3 @@
+global-include *.yaml
+include README.md
+include LICENSE.txt
