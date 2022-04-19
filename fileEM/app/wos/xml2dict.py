@@ -46,12 +46,13 @@ def translateQuery(string):
     names = summary.find('wos:names', web)
     dict_authors = {}
     for name in names:
-        dict_author = {}
-        dict_author['unique_id']  = int(name.attrib['daisng_id'])
-        for child in name:
-            if getTag(child.tag) in ['first_name', 'last_name', 'full_name']:
-                dict_author[getTag(child.tag)] = child.text
-        dict_authors[dict_author['unique_id']] = dict_author
+        if name.attrib['role'] == 'author':
+            dict_author = {}
+            dict_author['unique_id']  = int(name.attrib['daisng_id'])
+            for child in name:
+                if getTag(child.tag) in ['first_name', 'last_name', 'full_name']:
+                    dict_author[getTag(child.tag)] = child.text
+            dict_authors[dict_author['unique_id']] = dict_author
 
     # Get Keywords
     list_keywords = []

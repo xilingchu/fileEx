@@ -97,6 +97,7 @@ class wosClient(object):
     def __init__(self, sid_path, user:str=None, password:str=None):
         self.sid      = self.readsid(sid_path)
         self.sid      = self.sid.replace('\n', '')
+        self.sid_path = sid_path
         self.auth     = authClient(user, password, self.sid)
         self.search   = searchClient()
         # Set Sid Cookies
@@ -118,7 +119,7 @@ class wosClient(object):
 
     @staticmethod
     def throttle(func):
-        throttle_wait = limit(3, 2)(lambda: True)
+        throttle_wait = limit(2, 1)(lambda: True)
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             throttle_wait()
@@ -129,12 +130,16 @@ class wosClient(object):
         '''
         Authenticate to wos client and set sid cookie.
         '''
-        self.sid = self.auth.authenticate()
-        self.auth.client.options.headers.update({'Cookie': 'SID="%s"'%self.sid})
-        self.search.client.options.headers.update(headers={'Cookie': 'SID="%s"'%self.sid})
+        try:
+            self.sid = self.auth.authenticate()
+            self.auth.client.options.headers.update({'Cookie': 'SID="%s"'%self.sid})
+            self.search.client.options.headers.update({'Cookie': 'SID="%s"'%self.sid})
+            self.writesid(self.sid, self.sid_path)
+        except suds.WebFault as wf:
+            print('ERROR: %s'% wf.fault.faultstring)
         return self.sid
 
-    @throttle
+    @limit(2, 1)
     def query(self, str_in:str):
         # self.search.retrieveParameters.viewField = self.search.viewField_query
         # self.search.queryParameters.userQuery = 'DO = %s'%DOI
@@ -143,9 +148,11 @@ class wosClient(object):
         try:
             _query = self.search.search(self.search.queryParameters, self.search.retrieveParameters)
         except suds.WebFault as wf:
-            print('ERROR: %s'% wf.fault.faultstring)
+            # print('ERROR: %s'% wf.fault.faultstring)
             try:
-                self.auth.authenticate()
+                print(self.sid)
+                self.connect()
+                print(self.sid)
                 _query = self.search.search(self.search.queryParameters, self.search.retrieveParameters)
             except suds.WebFault as wf2:
                 print('ERROR: %s'% wf2.fault.faultstring)
@@ -175,11 +182,13 @@ class wosClient(object):
             _query = getcited()
         except suds.WebFault as wf:
             try:
-                self.auth.authenticate()
+                self.connect()
                 _query = getcited()
             except suds.WebFault as wf2:
                 print('ERROR: %s'% wf2.fault.faultstring)
                 raise Exception
+        except:
+            raise Exception
         self.search.retrieveParameters.viewField = self.search.viewField_query
         return _query
         

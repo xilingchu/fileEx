@@ -1,4 +1,4 @@
-dbName : '~/.fileEx/wos_article.db'
+dbName : '~/.fileEm/wos_article.db'
 # Set the tables
 Article:
   tableName: 'Article'

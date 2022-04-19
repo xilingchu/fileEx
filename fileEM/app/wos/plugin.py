@@ -2,6 +2,7 @@ from fileEM.app.wos.wosSQL import wosOper, artprint
 from argparse import ArgumentParser as ap
 from pathlib import Path
 import sys
+import os
 
 __all__ = ['plugin']
 
@@ -59,6 +60,7 @@ def plugin(parent_parse:ap, **kwargs):
 
 def func(args, **kwargs):
     pdfviewer = kwargs['viewer']
+    kwargs.pop('viewer')
     query_dict = {}
     for key, value in args.__dict__.items():
         if value is not None:
@@ -80,9 +82,17 @@ def func(args, **kwargs):
             print('No match returns!')
         elif len(_info) == 1:
             artprint(_info[0])
+            nart = 0
+            os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))
         elif len(_info) < 5:
             for _item in _info:
                 artprint(_item)
+            nart = input('Please choose the number 1-%i'%len(_info))
+            nart = int(nart) - 1
+            os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))
         else:
             for _item in _info:
                 artprint(_item, False)
+            nart = input('Please choose the number 1-%i'%len(_info))
+            nart = int(nart) - 1
+            os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))

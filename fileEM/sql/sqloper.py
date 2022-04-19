@@ -125,7 +125,7 @@ class operSQL(metaclass=metaSql):
                 _element_list.append(constrain)
             create_str += ',\n'.join(_element_list+_foreign_list)
             create_str += ');'
-            print('Table %s are created!'%(_table.__tableName__))
+            # print('Table %s are created!'%(_table.__tableName__))
             # print(create_str)
             self.c.execute(create_str)
             self.conn.commit()
@@ -143,10 +143,10 @@ class operSQL(metaclass=metaSql):
                 keylist.append(_key)
                 valuelist.append(_value)
         _str_insert = 'INSERT INTO %s(%s) VALUES (%s)'%(table, ','.join(keylist), ','.join(valuelist))
-        return _str_insert
-        # self.c.execute(_str_insert)
-        # self.conn.commit()
         # return _str_insert
+        self.c.execute(_str_insert)
+        self.conn.commit()
+        return _str_insert
 
     @_commit
     @_where(True)

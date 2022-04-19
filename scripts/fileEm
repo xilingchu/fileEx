@@ -14,8 +14,8 @@ config_path = Path(config_prefix + '/config/config.yaml')
 def main():
     config    = open(config_path, 'r')
     config    = yaml.load(config, Loader=yaml.FullLoader)
-    parse     = ap(prog='fileEx', description='API of fileEx.')
-    subparses = parse.add_subparsers(help='Plugin in fileEx.')
+    parse     = ap(prog='fileEm', description='API of fileEm.')
+    subparses = parse.add_subparsers(help='Plugin in fileEm.')
     # Import the app and add the keys.
     for key in config.keys():
         _plugin = getattr(app, key).plugin.plugin

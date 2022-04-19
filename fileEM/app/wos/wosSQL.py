@@ -27,7 +27,7 @@ def artprint(dict_art, flag_abstract=True):
 
 class wosOper(object):
     def __init__(self, sid_path:str=None, sql_path:str=None, user:str=None, password:str=None):
-        if 'user' and 'password' is not None:
+        if 'user' and 'password' != None:
             self.wos = wosClient(path(sid_path), user, password)
         else:
             self.wos = wosClient(path(sid_path))
@@ -127,9 +127,13 @@ class wosOper(object):
             else:
                kwargs['title'] = '%{}%'.format(kwargs['title'])
             where['title'] =  {'oper': 'LIKE', 'value' : kwargs['title']}
-        if 'pubyear'  in kwargs.keys():
+        if 'pubyear' in kwargs.keys():
             where['pubyear'] =  {'oper': 'BETWEEN', 'value' : kwargs['pubyear']}
-        query_list = ['uid', 'author', 'title', 'journal', 'pubyear', 'abstract', 'keywords']
+        query_list = ['uid', 'author', 'title', 'journal', 'pubyear', 'abstract', 'keywords', 'path']
+        # The list of where is none or not.
+        if where == {}:
+            print('Nothing to search!')
+            return []
         query_info = self.sql.query('Article', key=query_list,
                                     where=where, order=['journal', 'pubyear'])
         # Get the dict of the sql query
@@ -147,19 +151,21 @@ class wosOper(object):
             info_dict['Pubyear']  = item[14]
             info_dict['Abstract'] = item[15]
             info_dict['Keywords'] = item[16]
+            info_dict['Path']     = item[17]
             query_list.append(info_dict)
         return query_list
 
     def createCitedTable(self, uid):
         self.sql.c.execute(
                 '''
-                CREATE TABLE IF NOT EXISTS '%s'(
+                CREATE TABLE IF NOT EXISTS '%s' (
                 UID            varchar      UNIQUE NOT NULL,
                 Title          varchar      NOT NULL,
                 Journal        varchar      NOT NULL,
                 FOREIGN KEY(UID) REFERENCES Article(UID) ON UPDATE CASCADE,
                 FOREIGN KEY(Journal) REFERENCES Journal(Journal) ON UPDATE CASCADE
                 );'''%uid)
+        self.sql.conn.commit()
 
     def insertCitedTable(self, table, citedlist):
         for cited in citedlist:
@@ -178,11 +184,10 @@ class wosOper(object):
         cite_number = 0
         for cite in cited:
             if hasattr(cite, 'citedTitle') and hasattr(cite, 'citedWork'):
-                time.sleep(0.5)
-                _query = 'TI="%s" AND SO="%s"' % (cite.citedTitle, cite.citedWork)
-                _result = self.wos.query(str(_query))
+                _query = 'TI="%s" AND SO="%s"' % (cite.citedTitle.replace('$', ''), cite.citedWork)
+                _result = self.wos.query(_query)
                 _uid     = translateCited(_result)
-                if _uid is not None:
+                if _uid != None:
                     cite_number += 1
                     dict_cite = {}
                     dict_cite['UID']     = '\'%s\''%_uid
@@ -198,19 +203,21 @@ class wosOper(object):
         _result_article = self.sql.query('Article', key = ['uid'])
         _result_article = tuple2var(_result_article)
         self.sql.c.execute('SELECT UID FROM "%s";'%uid)
+        self.sql.conn.commit()
         # Find cited article in the list
         _result_cite    = tuple2var(self.sql.c.fetchall())
         set_cited = set(_result_article).intersection(_result_cite)
         for cite in set_cited:
-            result = self.sql.query('Link', article=uid, citedarticle=cite)
+            result = self.sql.query('Link', where={'article': {'oper': '==', 'value': uid}, 'citedarticle': {'oper': '==', 'value': cite}})
             if len(result) == 0:
                 self.sql.insert('Link', article=uid, citedarticle=cite)
         # Find citing article in the list
         for i in _result_article:
             self.sql.c.execute('SELECT UID FROM "%s" WHERE UID == "%s";'%(i, uid))
+            self.sql.conn.commit()
             result = self.sql.c.fetchall()
             if len(result) == 1:
-                result = self.sql.query('Link', article=i, citedarticle=uid)
+                result = self.sql.query('Link', where={'article': {'oper': '==', 'value': i}, 'citedarticle': {'oper': '==', 'value': uid}})
                 if len(result) == 0:
                     self.sql.insert('Link', article=i, citedarticle=uid)
 
