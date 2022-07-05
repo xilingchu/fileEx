@@ -12,16 +12,15 @@ auth_url = base_url + '/esti/wokmws/ws/WOKMWSAuthenticate?wsdl'
 search_url = base_url + '/esti/wokmws/ws/WokSearch?wsdl'
 searchlite_url = base_url + '/esti/wokmws/ws/WokSearchLite?wsdl'
 
-class sudsClient(type):
+class sudsClient:
     '''
     Read the method from the url and set methods through the url.
     '''
-    def __new__(cls, name, bases, attrs):
-        if 'url' not in attrs.keys():
-            raise Exception('The Client url is needed in attributes.')
-        url = attrs['url']
+    def __init__(self, url):
+        # if 'url' not in kwargs.keys():
+        #     raise Exception('The Client url is needed in attributes.')
         _client = Client(url, proxy=None, timeout=600)
-        attrs['client'] = _client
+        self.client = _client
         # Set the service
         # In this version, it will just record the methods.
         servicesdict = {}
@@ -41,18 +40,18 @@ class sudsClient(type):
                         _attr_name = service.xlate(_attr[1])
                         attrdict[_attr[0]] = _attr_name
                         if _attr_name in typelist:
-                            attrs[_attr_name] = _client.factory.create(_attr_name)
-                    attrs[method[0]] = getattr(_client.service, method[0])
+                            setattr(self, _attr_name, _client.factory.create(_attr_name))
+                    setattr(self,method[0], getattr(_client.service, method[0]))
                     _methodsdict[method[0]] = attrdict
             servicedict['method'] = _methodsdict
             servicedict['type']   = typelist
             servicesdict[_servicename] = servicedict
-        attrs['__services__'] = servicesdict
-        return type.__new__(cls, name, bases, attrs)
+        self.__services__ = servicesdict
 
-class authClient(metaclass=sudsClient):
+class authClient(sudsClient):
     url = auth_url
     def __init__(self, user:str=None, password:str=None, sid:str = None):
+        super().__init__(self.url)
         # Copy from github.com/wos
         # Thanks for helping me understand how to connect to wos API.
         headers = {}
@@ -62,9 +61,10 @@ class authClient(metaclass=sudsClient):
             headers = {'Authorization': ('Basic %s' % auth).strip()}
             self.client.set_options(headers=headers)
 
-class searchClient(metaclass=sudsClient):
+class searchClient(sudsClient):
     url = search_url
     def __init__(self, **kwargs):
+        super().__init__(self.url)
         self.viewField_query  = self.client.factory.create('viewField')
         self.viewField_citing = self.client.factory.create('viewField')
         self.viewField_cited  = self.client.factory.create('viewField')
@@ -204,15 +204,3 @@ class wosClient(object):
     #         except suds.WebFault as wf2:
     #             print('ERROR: %s'% wf2.fault.faultstring)
     #     return _query
-
-if __name__ == '__main__':
-    a     = wosClient('sid')
-    # query = 'DO=10.1146/annurev-fluid-122414-034550'
-    query = 'TI="Prediction and investigation of the turbulent flow over a rotating disk" AND SO="JOURNAL OF FLUID MECHANICS"'
-    # query = 'UT=000184104100015'
-    # query = 'AU=Quadrio'
-    b     = a.query(query)
-    # b     = a.querycite('000368367800007') 
-    print(a.search.queryParameters)
-    # for c in b:
-    #     print(c)

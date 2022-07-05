@@ -1,5 +1,5 @@
-from fileEM.app.wos.wosSQL import wosOper, artprint
 from argparse import ArgumentParser as ap
+from fileEM.app.wos.wosSQL import wosQueryOper, wosInsertOper, artprint
 from pathlib import Path
 import sys
 import os
@@ -69,14 +69,15 @@ def func(args, **kwargs):
         raise Exception('The SID is must in WOS client.')
     if 'sql_path' not in kwargs.keys():
         raise Exception('The SQL path is must in WOS client.')
-    _wos = wosOper(**kwargs)
     if 'add' in sys.argv:
         args.file = Path(args.file).expanduser().resolve()
         if not Path.is_file(Path(args.file)):
             print('Please enter the correct file location.')
             sys.exit(2)
+        _wos = wosInsertOper(**kwargs)
         _wos.insert(args.doi, args.file)
     if 'query' in sys.argv:
+        _wos = wosQueryOper(**kwargs)
         _info = _wos.query(**query_dict)
         if len(_info) == 0:
             print('No match returns!')

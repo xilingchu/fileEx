@@ -1,6 +1,6 @@
 from fileEM.sql.sqloper import operSQL
-from fileEM.app.wos.client import wosClient
 from fileEM.app.wos.xml2dict import translateQuery, translateCited
+from fileEM.app.wos.client import wosClient
 from fileEM.utils.path import path
 from pathlib import Path
 import sqlite3
@@ -25,7 +25,7 @@ def artprint(dict_art, flag_abstract=True):
     print('----------------------------------------------------------')
     print('----------------------------------------------------------')
 
-class wosOper(object):
+class wosInsertOper(object):
     def __init__(self, sid_path:str=None, sql_path:str=None, user:str=None, password:str=None):
         if 'user' and 'password' != None:
             self.wos = wosClient(path(sid_path), user, password)
@@ -59,6 +59,78 @@ class wosOper(object):
             self.sql.insert('Article', **dict_article)
         self.getCited(uid)
         self.updateLink(uid)
+
+    def createCitedTable(self, uid):
+        self.sql.c.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS '%s' (
+                UID            varchar      UNIQUE NOT NULL,
+                Title          varchar      NOT NULL,
+                Journal        varchar      NOT NULL,
+                FOREIGN KEY(UID) REFERENCES Article(UID) ON UPDATE CASCADE,
+                FOREIGN KEY(Journal) REFERENCES Journal(Journal) ON UPDATE CASCADE
+                );'''%uid)
+        self.sql.conn.commit()
+
+    def insertCitedTable(self, table, citedlist):
+        for cited in citedlist:
+            self.sql.c.execute('SELECT UID from "%s" WHERE UID == %s;'%(table, cited['UID']))
+            result = self.sql.c.fetchall()
+            if len(result) == 0:
+                self.sql.c.execute('INSERT INTO "%s" (%s) VALUES (%s);'%(table, ', '.join(cited.keys()), ', '.join(cited.values())))
+                print('Add paper %s into the table.'%(cited['Title']))
+                self.sql.conn.commit()
+
+    def getCited(self, uid):
+        cited = self.wos.querycite(uid)
+        cite_total = len(cited)
+        self.wos.search.retrieveParameters.viewField = self.wos.search.viewField_cited
+        list_cites = []
+        cite_number = 0
+        for cite in cited:
+            if hasattr(cite, 'citedTitle') and hasattr(cite, 'citedWork'):
+                _query = 'TI="%s" AND SO="%s"' % (cite.citedTitle.replace('$', ''), cite.citedWork)
+                _result = self.wos.query(_query)
+                _uid     = translateCited(_result)
+                if _uid != None:
+                    cite_number += 1
+                    dict_cite = {}
+                    dict_cite['UID']     = '\"%s\"'%_uid
+                    dict_cite['Title']   = '\"%s\"'%cite.citedTitle
+                    dict_cite['Journal'] = '\"%s\"'%cite.citedWork
+                    list_cites.append(dict_cite)
+        print('Add cited papers %i/%i!'%(cite_number, cite_total))
+        self.createCitedTable(uid)
+        self.insertCitedTable(uid, list_cites)
+        self.wos.search.retrieveParameters.viewField = self.wos.search.viewField_query
+
+    def updateLink(self, uid):
+        _result_article = self.sql.query('Article', key = ['uid'])
+        _result_article = tuple2var(_result_article)
+        self.sql.c.execute('SELECT UID FROM "%s";'%uid)
+        self.sql.conn.commit()
+        # Find cited article in the list
+        _result_cite    = tuple2var(self.sql.c.fetchall())
+        set_cited = set(_result_article).intersection(_result_cite)
+        for cite in set_cited:
+            result = self.sql.query('Link', where={'article': {'oper': '==', 'value': uid}, 'citedarticle': {'oper': '==', 'value': cite}})
+            if len(result) == 0:
+                self.sql.insert('Link', article=uid, citedarticle=cite)
+        # Find citing article in the list
+        for i in _result_article:
+            self.sql.c.execute('SELECT UID FROM "%s" WHERE UID == "%s";'%(i, uid))
+            self.sql.conn.commit()
+            result = self.sql.c.fetchall()
+            if len(result) == 1:
+                result = self.sql.query('Link', where={'article': {'oper': '==', 'value': i}, 'citedarticle': {'oper': '==', 'value': uid}})
+                if len(result) == 0:
+                    self.sql.insert('Link', article=i, citedarticle=uid)
+
+class wosQueryOper(object):
+    def __init__(self, sid_path:str=None, sql_path:str=None):
+        sql = type('sql', (operSQL,), {'config':sql_path})
+        self.sql = sql()
+        self.sql.create()
 
     def query(self, **kwargs):
         def uid2name(uid):
@@ -154,78 +226,3 @@ class wosOper(object):
             info_dict['Path']     = item[17]
             query_list.append(info_dict)
         return query_list
-
-    def createCitedTable(self, uid):
-        self.sql.c.execute(
-                '''
-                CREATE TABLE IF NOT EXISTS '%s' (
-                UID            varchar      UNIQUE NOT NULL,
-                Title          varchar      NOT NULL,
-                Journal        varchar      NOT NULL,
-                FOREIGN KEY(UID) REFERENCES Article(UID) ON UPDATE CASCADE,
-                FOREIGN KEY(Journal) REFERENCES Journal(Journal) ON UPDATE CASCADE
-                );'''%uid)
-        self.sql.conn.commit()
-
-    def insertCitedTable(self, table, citedlist):
-        for cited in citedlist:
-            self.sql.c.execute('SELECT UID from "%s" WHERE UID == %s;'%(table, cited['UID']))
-            result = self.sql.c.fetchall()
-            if len(result) == 0:
-                self.sql.c.execute('INSERT INTO "%s" (%s) VALUES (%s);'%(table, ', '.join(cited.keys()), ', '.join(cited.values())))
-                print('Add paper %s into the table.'%(cited['Title']))
-                self.sql.conn.commit()
-
-    def getCited(self, uid):
-        cited = self.wos.querycite(uid)
-        cite_total = len(cited)
-        self.wos.search.retrieveParameters.viewField = self.wos.search.viewField_cited
-        list_cites = []
-        cite_number = 0
-        for cite in cited:
-            if hasattr(cite, 'citedTitle') and hasattr(cite, 'citedWork'):
-                _query = 'TI="%s" AND SO="%s"' % (cite.citedTitle.replace('$', ''), cite.citedWork)
-                _result = self.wos.query(_query)
-                _uid     = translateCited(_result)
-                if _uid != None:
-                    cite_number += 1
-                    dict_cite = {}
-                    dict_cite['UID']     = '\'%s\''%_uid
-                    dict_cite['Title']   = '\'%s\''%cite.citedTitle
-                    dict_cite['Journal'] = '\'%s\''%cite.citedWork
-                    list_cites.append(dict_cite)
-        print('Add cited papers %i/%i!'%(cite_number, cite_total))
-        self.createCitedTable(uid)
-        self.insertCitedTable(uid, list_cites)
-        self.wos.search.retrieveParameters.viewField = self.wos.search.viewField_query
-
-    def updateLink(self, uid):
-        _result_article = self.sql.query('Article', key = ['uid'])
-        _result_article = tuple2var(_result_article)
-        self.sql.c.execute('SELECT UID FROM "%s";'%uid)
-        self.sql.conn.commit()
-        # Find cited article in the list
-        _result_cite    = tuple2var(self.sql.c.fetchall())
-        set_cited = set(_result_article).intersection(_result_cite)
-        for cite in set_cited:
-            result = self.sql.query('Link', where={'article': {'oper': '==', 'value': uid}, 'citedarticle': {'oper': '==', 'value': cite}})
-            if len(result) == 0:
-                self.sql.insert('Link', article=uid, citedarticle=cite)
-        # Find citing article in the list
-        for i in _result_article:
-            self.sql.c.execute('SELECT UID FROM "%s" WHERE UID == "%s";'%(i, uid))
-            self.sql.conn.commit()
-            result = self.sql.c.fetchall()
-            if len(result) == 1:
-                result = self.sql.query('Link', where={'article': {'oper': '==', 'value': i}, 'citedarticle': {'oper': '==', 'value': uid}})
-                if len(result) == 0:
-                    self.sql.insert('Link', article=i, citedarticle=uid)
-
-if __name__ == '__main__':
-    a = wosOper('config.yaml')
-    # a.insert('10.1063/1.1586273', 'test')
-    # a.insert('10.1017/S0022112087000892', 'test')
-    a.insert('10.1063/1.4819144', 'test')
-    a.query(author=['kim', 'moser'])
-    artprint(a.query(journal='fluid')[0])
-    # b = a.getCited('000184104100015')

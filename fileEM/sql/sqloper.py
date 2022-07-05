@@ -34,6 +34,7 @@ class operSQL(metaclass=metaSql):
             _commit = func(self, *args, **kwargs)
             _commit += ';'
             # print(_commit)
+            print(_commit)
             self.c.execute(_commit)
             self.conn.commit()
         return wrapper
@@ -142,7 +143,7 @@ class operSQL(metaclass=metaSql):
             if _key is not None:
                 keylist.append(_key)
                 valuelist.append(_value)
-        _str_insert = 'INSERT INTO %s(%s) VALUES (%s)'%(table, ','.join(keylist), ','.join(valuelist))
+        _str_insert = 'INSERT OR REPLACE INTO %s(%s) VALUES (%s)'%(table, ','.join(keylist), ','.join(valuelist))
         # return _str_insert
         self.c.execute(_str_insert)
         self.conn.commit()
