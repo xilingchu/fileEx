@@ -1,5 +1,5 @@
 from argparse import ArgumentParser as ap
-from fileEM.app.wos.wosSQL import wosQueryOper, wosInsertOper, artprint
+from fileEM.app.wos.s2SQL import s2QueryOper, s2InsertOper, artprint
 from pathlib import Path
 import sys
 import os
@@ -44,7 +44,7 @@ def plugin(parent_parse:ap, **kwargs):
                     help='Query journal'
                     )
     query.add_argument(
-                    '-k', '--keyword',
+                    '-f', '--fields',
                     type=str,
                     default=None,
                     help='Query keyword',
@@ -65,19 +65,15 @@ def func(args, **kwargs):
     for key, value in args.__dict__.items():
         if value is not None:
             query_dict[key] = value
-    if 'sid_path' not in kwargs.keys():
-        raise Exception('The SID is must in WOS client.')
-    if 'sql_path' not in kwargs.keys():
-        raise Exception('The SQL path is must in WOS client.')
     if 'add' in sys.argv:
         args.file = Path(args.file).expanduser().resolve()
         if not Path.is_file(Path(args.file)):
             print('Please enter the correct file location.')
             sys.exit(2)
-        _wos = wosInsertOper(**kwargs)
-        _wos.insert(args.doi, args.file)
+        _wos = s2InsertOper(**kwargs)
+        _wos.insertDB(args.doi, args.file)
     if 'query' in sys.argv:
-        _wos = wosQueryOper(**kwargs)
+        _wos  = s2QueryOper(**kwargs)
         _info = _wos.query(**query_dict)
         if len(_info) == 0:
             print('No match returns!')

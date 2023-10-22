@@ -29,7 +29,7 @@ class s2Client(object):
         return msg.json()
 
     # For fileEM
-    def queryPaperDOI(self, doi, fields = 'paperId,externalIds,title,authors,publicationVenue,abstract,s2FieldsOfStudy,journal,references'):
+    def queryPaperDOI(self, doi, fields = 'paperId,externalIds,title,authors,year,abstract,s2FieldsOfStudy,journal,references,publicationVenue,publicationTypes'):
         url = self.base_url + f'/graph/v1/paper/DOI:{doi}'
         params = {
                 'fields' : fields,
@@ -62,4 +62,6 @@ class s2Client(object):
 if __name__ == '__main__':
     client = s2Client()
     msg = client.queryPaperDOI('10.1017/jfm.2018.749')
-    print(msg['references'])
+    print(msg)
+    _id = msg['paperId']
+    authors = client.queryPaperAuthor(_id)
