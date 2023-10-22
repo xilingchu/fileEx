@@ -34,7 +34,7 @@ class operSQL(metaclass=metaSql):
             _commit = func(self, *args, **kwargs)
             _commit += ';'
             # print(_commit)
-            print(_commit)
+            # print(_commit)
             self.c.execute(_commit)
             self.conn.commit()
         return wrapper
@@ -145,6 +145,7 @@ class operSQL(metaclass=metaSql):
                 valuelist.append(_value)
         _str_insert = 'INSERT OR REPLACE INTO %s(%s) VALUES (%s)'%(table, ','.join(keylist), ','.join(valuelist))
         # return _str_insert
+        # print(_str_insert)
         self.c.execute(_str_insert)
         self.conn.commit()
         return _str_insert
@@ -182,8 +183,8 @@ class operSQL(metaclass=metaSql):
         if 'key' not in kwargs:
             _str_select = 'SELECT * FROM %s'%(table)
         else:
-            keylist = _table._check_keys(kwargs['key'])
-            _str_select = 'SELECT %s FROM %s' % (','.join(keylist), table)
+            # keylist = _table._check_keys(kwargs['key'])
+            _str_select = 'SELECT %s FROM %s' % (','.join(kwargs['key']), table)
         return _str_select
 
     def query(self, table, **kwargs):
