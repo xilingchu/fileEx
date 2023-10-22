@@ -1,128 +1,86 @@
-dbName : '~/.fileEm/wos_article.db'
+dbName : '~/.fileEm/s2article.db'
 # Set the tables
-Article:
-  tableName: 'Article'
+# Main table of journal article
+Journal_articles:
+  tableName: 'Journal_articles'
   # Set the elements in the table
-  uid:
-    elementName: 'UID'
+  paperId:
+    elementName: 'paperId'
     elementType: 'str'
     columnName:  'VARCHAR'
     otherKW:     'PRIMARY KEY'
   title:
-    elementName: 'TITLE'
+    elementName: 'title'
     elementType: 'str'
     columnName:  'VARCHAR'
     otherKW:     'NOT NULL'
+  fields:
+    elementName: 'fields'
+    elementType: 'str'
+    columnName:  'VARCHAR'
   pubyear:
-    elementName: 'PUBYEAR'
+    elementName: 'pubyear'
     elementType: 'int'
     columnName:  'INT'
-  begin:
-    elementName: 'BEGIN'
-    elementType: 'int'
-    columnName:  'INT'
-  end:
-    elementName: 'END'
-    elementType: 'int'
-    columnName:  'INT'
-  page_count:
-    elementName: 'PAGES'
-    elementType: 'int'
-    columnName:  'INT'
+  pages:
+    elementName: 'pages'
+    elementType: 'str'
+    columnName:  'VARCHAR'
   vol:
-    elementName: 'VOL'
+    elementName: 'vol'
     elementType: 'int'
     columnName:  'INT'
   journal:
-    elementName: 'JOURNAL'
+    elementName: 'journal'
     elementType: 'str'
     columnName:  'VARCHAR'
     foreignKey:
       table: Journal
-      name:  Journal
-  author:
-    nargs:    10
-    elementName: 'AUTHOR'
-    elementType: 'int'
-    columnName:  'INT'
-    foreignKey:
-      table: Author
-      name:  Unique_id
-  keywords:
-    elementName: 'KEYWORDS'
+      name:  Id
+  authors:
+    elementName: 'authors'
     elementType: 'str'
-    columnName:  'TEXT'
+    columnName:  'VARCHAR'
   abstract:
-    elementName: 'ABSTRACT'
+    elementName: 'abstract'
     elementType: 'str'
     columnName:  'TEXT'
   doi:
-    elementName: 'DOI'
+    elementName: 'doi'
     elementType: 'str'
     columnName:  'VARCHAR'
   path:
-    elementName: 'PATH'
+    elementName: 'path'
     elementType: 'str'
     columnName:  'VARCHAR'
+  nref:
+    elementName: 'nref'
+    elementType: 'int'
+    columnName:  'INT'
 Author:
   tableName: 'Author'
-  unique_id:
-    elementName: 'Unique_id'
+  authorId:
+    elementName: 'authorId'
     elementType: 'int'
     columnName:  'INT'
     otherKW:     'PRIMARY KEY'
-  full_name:
-    elementName: 'FullName'
+  Name:
+    elementName: 'Name'
     elementType: 'str'
     columnName:  'VARCHAR'
     otherKW:     'NOT NULL'
-  first_name:
-    elementName: 'FirstName'
-    elementType: 'str'
-    columnName:  'VARCHAR'
-  last_name:
-    elementName: 'LastName'
-    elementType: 'str'
-    columnName:  'VARCHAR'
 Journal:
   tableName: 'Journal'
-  journal:
-    elementName: 'Journal'
+  Id:
+    elementName: 'Id'
     elementType: 'str'
     columnName:  'VARCHAR'
     otherKW:     'PRIMARY KEY'
-  source_abbrev:
-    elementName: 'source_abbrev'
+  Name:
+    elementName: 'Name'
     elementType: 'str'
     columnName:  'VARCHAR'
-  abbrev_iso:
-    elementName: 'abbrev_iso'
+  Alternative:
+    elementName: 'Alternative'
     elementType: 'str'
     columnName:  'VARCHAR'
-  abbrev_11:
-    elementName: 'abbrev_11'
-    elementType: 'str'
-    columnName:  'VARCHAR'
-  abbrev_29:
-    elementName: 'abbrev_29'
-    elementType: 'str'
-    columnName:  'VARCHAR'
-Link:
-  tableName: 'Link'
-  article:
-    elementName: 'article'
-    elementType: 'str'
-    columnName:  'VARCHAR'
-    foreignKey:
-      table: Article
-      name:  UID
-  citedarticle:
-    elementName: 'cited_article'
-    elementType: 'str'
-    columnName:  'VARCHAR'
-    foreignKey:
-      table: Article
-      name:  UID
-  constrain:
-  - 'article'
-  - 'cited_article'
