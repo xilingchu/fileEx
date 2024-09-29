@@ -78,18 +78,28 @@ def func(args, **kwargs):
         if len(_info) == 0:
             print('No match returns!')
         elif len(_info) == 1:
-            artprint(_info[0])
+            artprint(_info[0], 1)
             nart = 0
             os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))
         elif len(_info) < 5:
+            i = 0
             for _item in _info:
-                artprint(_item)
-            nart = input('Please choose the number 1-%i'%len(_info))
-            nart = int(nart) - 1
-            os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))
+                i += 1
+                artprint(_item, i)
+            try:
+                nart = input('Please choose the number (1-%i): '%len(_info))
+                nart = int(nart) - 1
+                os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))
+            except KeyboardInterrupt:
+                print('\nQuit!')
         else:
+            i = 0
             for _item in _info:
-                artprint(_item, False)
-            nart = input('Please choose the number 1-%i'%len(_info))
-            nart = int(nart) - 1
-            os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))
+                i += 1
+                artprint(_item, i, False)
+            try:
+                nart = input('Please choose the number (1-%i): '%len(_info))
+                nart = int(nart) - 1
+                os.system('%s %s &'%(pdfviewer, _info[nart]['Path']))
+            except KeyboardInterrupt:
+                print('\nQuit!')

@@ -6,10 +6,10 @@ def tuple2var(tarlist, index:int=0):
         tarlist[i] = tarlist[i][index]
     return tarlist
 
-def artprint(dict_art, flag_abstract=True):
+def artprint(dict_art, i, flag_abstract=True):
     # Print title the second column is title
     print('----------------------------------------------------------')
-    print('Title  : %s'%(dict_art['Title']))
+    print('(%i) Title  : %s'%(i, dict_art['Title']))
     print('Authors: %s'%(dict_art['Authors']))
     print('Pubyear: %s'%(dict_art['Pubyear']))
     print('Journal: %s'%(dict_art['Journal']))
@@ -20,7 +20,7 @@ def artprint(dict_art, flag_abstract=True):
     print('----------------------------------------------------------')
 
 class s2InsertOper(object):
-    def __init__(self, sql_path:str=None):
+    def __init__(self, sql_path:str):
         sql = type('sql', (operSQL,), {'config':sql_path})
         self.sql = sql()
         self.sql.create()
@@ -83,18 +83,27 @@ class s2InsertOper(object):
             _field  = ' | '.join(_field_list)
             # Get the authors
             _authors_for_art = ' | '.join(_authors_for_art)
+            #### Risk1 No jorunal pages and vol
+            try:
+                _pages = _query['journal']['pages']
+            except:
+                _pages = '0'
+            try:
+                _vol   = int(_query['journal']['volume'])
+            except:
+                _vol = 0
             _article_dict = {
                         'paperId' : _query['paperId'],  
                         'title'   : _query['title'],
                         'fields'  : _field,
                         'pubyear' : int(_query['year']),
-                        'pages'   : _query['journal']['pages'],
-                        'vol'     : int(_query['journal']['volume']),
+                        'pages'   : _pages,
+                        'vol'     : _vol,
                         'journal' : _venue['id'],
                         'authors' : _authors_for_art,
                         'abstract': _query['abstract'],
                         'doi'     : doi,
-                        'path'    : path, 
+                        'path'    : str(path), 
                         'nref'    : len(_query['references']),
                         }
             self.sql.insert('Journal_articles', **_article_dict)
@@ -139,6 +148,12 @@ class s2QueryOper(object):
             # print(_namelist)
             return _namelist[-1]
             
+        def jid2name(Id:str):
+            _name = self.sql.query('Journal', key = ['Name'],
+                                   where = {'Id':{'oper': '==', 'value': Id}})
+            # print(_namelist)
+            return _name[0][0]
+
         _where = {}
         # Select author from author table.
         if 'author' in kwargs.keys():
@@ -174,10 +189,10 @@ class s2QueryOper(object):
         if 'journal' in kwargs.keys():
             _journal_list = self.sql.query('Journal', key=['Id', 'Name'],
                                            where={'Name' : {'oper': 'LIKE', 'value': '%{}%'.format(kwargs['journal'])}})
-            _journal_list      = tuple2var(_journal_list)
-            _journal_name_list = tuple2var(_journal_list, 1)
+            _journal_list_2    = tuple2var(_journal_list[:])
+            _journal_name_list = tuple2var(_journal_list[:], 1)
             if len(_journal_list) == 1:
-                _journal = _journal_list[0]
+                _journal = _journal_list_2[0]
             elif len(_journal_list) > 1:
                 print('Which Jornal do you wanna select?[1-{}]'.format(len(_journal_list)))
                 count = 0
@@ -185,7 +200,7 @@ class s2QueryOper(object):
                     count += 1
                     print('{}. {}'.format(count, name))
                 num_id = int(input('Please choose the number:'))
-                _journal = _journal_list[num_id-1]
+                _journal = _journal_list_2[num_id]
             else:
                 print('Database doesn\'t have this journal.')
             if _journal != '':
@@ -197,8 +212,8 @@ class s2QueryOper(object):
                 for i in range(len(kwargs['fields'])):
                     kwargs['fields'][i] = '%{}%'.format(kwargs['fields'][i])
             else:
-               kwargs['keywords'] = '%{}%'.format(kwargs['fields'])
-            _where['keywords'] =  {'oper': 'LIKE', 'value' : kwargs['keywords']}
+               kwargs['fields'] = '%{}%'.format(kwargs['fields'])
+            _where['fields'] =  {'oper': 'LIKE', 'value' : kwargs['fields']}
         if 'title' in kwargs.keys():
             if type(kwargs['title']) is list:
                 for i in range(len(kwargs['title'])):
@@ -225,9 +240,9 @@ class s2QueryOper(object):
             _author_name     = []
             for _author in _author_list:
                 _author_name.append(uid2name(int(_author)))
-            info_dict['Authors']  = '; '.join(_author_list)
+            info_dict['Authors']  = '; '.join(_author_name)
             info_dict['Title']    = _item[2]
-            info_dict['Journal']  = _item[3]
+            info_dict['Journal']  = jid2name(_item[3])
             info_dict['Pubyear']  = _item[4]
             info_dict['Abstract'] = _item[5]
             info_dict['Fields']   = _item[6]

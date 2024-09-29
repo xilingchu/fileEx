@@ -1,4 +1,3 @@
 wos:
-  sid_path: '~/.config/fileEm/wos/sid'
   sql_path: '~/.config/fileEm/wos/wos.yaml'
-  viewer: zathura
+  viewer: okular

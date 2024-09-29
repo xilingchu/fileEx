@@ -33,8 +33,6 @@ class operSQL(metaclass=metaSql):
         def wrapper(self, *args, **kwargs):
             _commit = func(self, *args, **kwargs)
             _commit += ';'
-            # print(_commit)
-            # print(_commit)
             self.c.execute(_commit)
             self.conn.commit()
         return wrapper
@@ -95,10 +93,11 @@ class operSQL(metaclass=metaSql):
                                 _value = [_value]
                             if value['oper'].lower() == 'between':
                                 wherelist.append('%s %s %s'%(_key, value['oper'], ' AND '.join(_value)))
-                            if value['oper'].lower() == 'in':
+                            elif value['oper'].lower() == 'in':
                                 wherelist.append('%s %s (%s)'%(_key, value['oper'], *_value))
                             else:
-                                wherelist.append('%s %s %s'%(_key, value['oper'], ' AND '.join(_value)))
+                                _value = [_key + ' ' + value['oper'] + ' ' + _item for _item in _value]
+                                wherelist.append(' AND '.join(_value))
                     _str_where += ' AND '.join(wherelist)
                     kwargs.pop('where')
                     return func(self, table, **kwargs)+_str_where
