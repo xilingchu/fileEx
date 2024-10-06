@@ -1,6 +1,9 @@
 from fileEM.sql.sqloper import operSQL
 from fileEM.app.wos.s2client import s2Client
 
+def sortYear(_list):
+  return _list['Pubyear']
+
 def tuple2var(tarlist, index:int=0):
     for i in range(len(tarlist)):
         tarlist[i] = tarlist[i][index]
@@ -32,8 +35,23 @@ class s2InsertOper(object):
         except:
             raise Exception('Cannot find the paper in S2 database.')
         _id = _query['paperId']
-        _authors = _client.queryPaperAuthor(_id)['data']
+        # _authors = _client.queryPaperAuthor(_id)['data']
+        _authors = _query['authors']
         _venue   = _query['publicationVenue']
+        print(_query['abstract'])
+        # If the article don't have publicationVenue
+        if _venue == None:
+            _venue = {}
+            # Type the information by yourself
+            _venue['type'] = input('If the type of type article is Journal?(Y/N)')
+            if _venue['type'] == 'Y':
+                _venue['type'] = 'journal'
+                _journal_info  = _query['journal']
+                _venue['id']   = _journal_info['name']
+                _venue['name'] = _journal_info['name']
+                _venue['alternate_names'] = _venue['name']
+            else:
+                _venue['type'] = None
         # Judge if that paper is an article paper.
         if _venue['type'] == 'journal':
             #------------- Insert Author -------------#
@@ -45,11 +63,23 @@ class s2InsertOper(object):
                 # Query if the Author in the table!
                 _result = self.sql.query('Author', key=['authorId'],
                                         where={'authorId' : {'oper': '==', 'value': int(_author['authorId'])}})
+                # Add author to the table
+                if len(_result) != 0:
+                    _author_list = self.sql.query('Author', key=['Name'],
+                                            where={'authorId' : {'oper': '==', 'value': int(_author['authorId'])}})
+                    _author_list = tuple2var(_author_list)[0]
+                    if _author['name'] not in _author_list:
+                        _author_list += ' | ' + _author['name']
+                        _author_insert = {
+                                'authorId': int(_author['authorId']),
+                                'Name'    : _author_list, 
+                                }
+                        self.sql.insert('Author', **_author_insert)
                 # if not!
                 if len(_result) == 0:
                     # Get the author namelist
-                    _author_aliases = _author['aliases']
-                    _author_list = ' | '.join(_author_aliases)
+                    # _author_aliases = _author['aliases']
+                    _author_list = _author['name']
                     _author_insert = {
                             'authorId': int(_author['authorId']),
                             'Name'    : _author_list, 
@@ -64,11 +94,11 @@ class s2InsertOper(object):
             if len(_result) == 0:
                 # Get the author namelist
                 _journal_aliases = _venue['alternate_names']
-                _journal_list    = ' | '.join(_journal_aliases)
+                # _journal_list    = ' | '.join(_journal_aliases)
                 _journal_insert = {
                         'Id'          : _venue['id'],
                         'Name'        : _venue['name'], 
-                        'Alternative' : _journal_list
+                        'Alternative' : _journal_aliases
                         }
                 self.sql.insert('Journal', **_journal_insert)
             #------------ Insert Article ------------#
@@ -106,6 +136,8 @@ class s2InsertOper(object):
                         'path'    : str(path), 
                         'nref'    : len(_query['references']),
                         }
+            if _article_dict['abstract'] ==  None:
+                _article_dict['abstract'] = 'None'
             self.sql.insert('Journal_articles', **_article_dict)
             #----------- Insert References -----------#
             # Create reference table
@@ -248,6 +280,7 @@ class s2QueryOper(object):
             info_dict['Fields']   = _item[6]
             info_dict['Path']     = _item[7]
             _query_list.append(info_dict)
+        _query_list.sort(key=sortYear)
         return _query_list
 
 if __name__ == '__main__':

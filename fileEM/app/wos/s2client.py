@@ -38,7 +38,7 @@ class s2Client(object):
         msg.raise_for_status()
         return msg.json()
 
-    def queryPaperAuthor(self, id_paper, fields = 'authorId,name,aliases', offset = 0):
+    def queryPaperAuthor(self, id_paper, fields = 'authorId,name', offset = 0): # alias was removed by Sementic Scholar
         url = self.base_url + f'/graph/v1/paper/{id_paper}/authors'
         params = {
                 'fields' : fields,
@@ -61,7 +61,8 @@ class s2Client(object):
         
 if __name__ == '__main__':
     client = s2Client()
-    msg = client.queryPaperDOI('10.1017/jfm.2018.749')
+    msg = client.queryPaperDOI('10.1016/j.ijheatfluidflow.2004.02.029')
     print(msg)
     _id = msg['paperId']
     authors = client.queryPaperAuthor(_id)
+    print(authors)
