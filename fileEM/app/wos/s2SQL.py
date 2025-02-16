@@ -38,7 +38,7 @@ class s2InsertOper(object):
         # _authors = _client.queryPaperAuthor(_id)['data']
         _authors = _query['authors']
         _venue   = _query['publicationVenue']
-        print(_query['abstract'])
+        # print(_query['abstract'])
         # If the article don't have publicationVenue
         if _venue == None:
             _venue = {}
@@ -98,7 +98,7 @@ class s2InsertOper(object):
                 _journal_insert = {
                         'Id'          : _venue['id'],
                         'Name'        : _venue['name'], 
-                        'Alternative' : _journal_aliases
+                        'Alternative' : ','.join(_journal_aliases)
                         }
                 self.sql.insert('Journal', **_journal_insert)
             #------------ Insert Article ------------#
