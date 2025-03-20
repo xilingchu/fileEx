@@ -1,10 +1,23 @@
 from argparse import ArgumentParser as ap
 from fileEM.app.wos.s2SQL import s2QueryOper, s2InsertOper, artprint
+from fileEM.chatgpt.client import gptCilent
+from pdfminer.high_level import extract_text
 from pathlib import Path
 import sys
 import os
 
 __all__ = ['plugin']
+
+def extractDoi(cilent, path):
+    # Extract first two pages to get the doi number
+    path = Path(path).expanduser().resolve()
+    pdf = extract_text(path, maxpages=3)
+    messages=[{"role": "system", 
+               "content": 'You are a literature information extraction assistant. Please extract the doi of the paper. The only thing you should return is doi, don\'t add anything, e.t. 10.1063/1.870167'},
+              {"role": "user",
+               "content": pdf}]
+    response = cilent.query(messages)
+    return response.choices[0].message.content
 
 def plugin(parent_parse:ap, **kwargs):
     subparses = parent_parse.add_subparsers()
@@ -16,11 +29,11 @@ def plugin(parent_parse:ap, **kwargs):
                     required = True,
                     help = 'Add the path of the Article.'
                     )
-    add.add_argument(
-                    '-d', '--doi',
-                    required = True,
-                    help = 'Add the DOI of the Article.'
-                    )
+    # add.add_argument(
+    #                 '-d', '--doi',
+    #                 required = True,
+    #                 help = 'Add the DOI of the Article.'
+    #                 )
     # Query Method
     query     = subparses.add_parser('query', help='Query method in WOS plugin.')
     query.add_argument(
@@ -34,7 +47,7 @@ def plugin(parent_parse:ap, **kwargs):
                     '-t', '--title',
                     type=str,
                     default=None,
-                    help='Query author',
+                    help='Query title',
                     nargs='+'
                     )
     query.add_argument(
@@ -47,7 +60,7 @@ def plugin(parent_parse:ap, **kwargs):
                     '-f', '--fields',
                     type=str,
                     default=None,
-                    help='Query keyword',
+                    help='Query fields',
                     nargs='+'
                     )
     query.add_argument(
@@ -61,15 +74,25 @@ def plugin(parent_parse:ap, **kwargs):
 def func(args, **kwargs):
     pdfviewer = kwargs['viewer']
     kwargs.pop('viewer')
+    url = kwargs['url']
+    api = kwargs['api']
+    model = kwargs['model']
+    kwargs.pop('url')
+    kwargs.pop('api')
+    kwargs.pop('model')
     query_dict = {}
     for key, value in args.__dict__.items():
         if value is not None:
             query_dict[key] = value
     if 'add' in sys.argv:
         args.file = Path(args.file).expanduser().resolve()
-        if not Path.is_file(Path(args.file)):
-            print('Please enter the correct file location.')
-            sys.exit(2)
+        # if not Path.is_file(Path(args.file)):
+        #     print('Please enter the correct file location.')
+        #     sys.exit(2)
+        # Get doi through openai
+        gpt = gptCilent(url, api, model)
+        args.doi = extractDoi(gpt, args.file)
+        print(args.doi)
         _wos = s2InsertOper(**kwargs)
         _wos.insertDB(args.doi, args.file)
     if 'query' in sys.argv:
