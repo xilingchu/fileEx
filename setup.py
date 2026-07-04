@@ -4,7 +4,37 @@ Author: Lingchu Xi <xilingchu@163.com>
 This package is distributed under MIT license.
 '''
 from setuptools import setup, find_packages
+from setuptools.command.install import install
+from setuptools.command.develop import develop
 from pathlib import Path
+import shutil
+
+def install_user_config():
+    '''
+    Copy the bundled default config into ~/.config/fileEm/ so users can edit
+    their own settings without touching the installed package files.
+    Existing user config is never overwritten.
+    '''
+    _src_root = Path(__file__).parent / 'fileEM' / 'config'
+    _dst_root = Path('~/.config/fileEm').expanduser()
+    for _src in _src_root.rglob('*'):
+        if _src.is_dir():
+            continue
+        _dst = _dst_root / _src.relative_to(_src_root)
+        if _dst.exists():
+            continue
+        _dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(_src, _dst)
+
+class InstallWithConfig(install):
+    def run(self):
+        install.run(self)
+        install_user_config()
+
+class DevelopWithConfig(develop):
+    def run(self):
+        develop.run(self)
+        install_user_config()
 
 long_description='''
 File Extraordinary Manager(FileEM) is a Python package help you manage all your files in your computer.
@@ -39,5 +69,9 @@ setup(
         packages=find_packages(exclude=['scripts', 'config']),
         url="https://github.com/xilingchu/fileEM",
         requires=['PyYAML', 'suds'],
-        scripts=['scripts/fileEm']
+        scripts=['scripts/fileEm'],
+        cmdclass={
+            'install': InstallWithConfig,
+            'develop': DevelopWithConfig,
+            }
         )
