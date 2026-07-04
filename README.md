@@ -9,10 +9,13 @@ It's for you if you've ever asked:
 2. How can I sort my files in a smarter way?
 3. How do I get more out of my computer's terminal?
 
-FileEM is plugin-based. It currently ships one plugin, `wos` (Web of Science), which
-manages a personal library of academic papers: it indexes PDFs in a SQLite database,
-looks up bibliographic metadata (via Semantic Scholar), and opens the matching PDF in
-your viewer of choice.
+FileEM is plugin-based. It currently ships one plugin, `wos`, which manages a personal
+library of academic papers: it indexes PDFs in a SQLite database, looks up
+bibliographic metadata, and opens the matching PDF in your viewer of choice.
+
+> The plugin is named `wos` after Web of Science, which is where it originally pulled
+> metadata from. That access was later lost, so it was switched to the
+> [Semantic Scholar API](https://api.semanticscholar.org) instead — the name stuck.
 
 ## Installation
 
@@ -22,13 +25,17 @@ cd fileEM
 pip install .
 ```
 
-This installs the `fileEm` package and the `fileEm` command-line script.
+This installs the `fileEm` package and the `fileEm` command-line script. It also
+copies the default config files into `~/.config/fileEm/` (only files that don't
+already exist there are copied, so re-installing/upgrading won't clobber your
+settings).
 
 ## Configuration
 
-FileEM reads a top-level config at `fileEM/config/config.yaml` (relative to the
-installed package). Each top-level key enables a plugin and is passed as keyword
-arguments to that plugin's handler.
+FileEM reads its top-level config from `~/.config/fileEm/config.yaml` (falling back to
+the package's bundled default if that file is missing, e.g. when running from source).
+Each top-level key enables a plugin and is passed as keyword arguments to that
+plugin's handler.
 
 ```yaml
 wos:
@@ -40,8 +47,9 @@ wos:
 ```
 
 - `sql_path` — path to the YAML schema describing the SQLite tables used by the
-  `wos` plugin (see `fileEM/config/wos/wos.yaml` for the default schema:
-  `Journal_articles`, `Author`, `Journal`).
+  `wos` plugin (default schema at `~/.config/fileEm/wos/wos.yaml`, copied from
+  `fileEM/config/wos/wos.yaml` at install time: `Journal_articles`, `Author`,
+  `Journal`).
 - `viewer` — the command used to open a matched PDF (e.g. `okular`, `evince`, `open`).
 - `url`, `api`, `model` — connection details for an OpenAI-compatible endpoint, used
   to extract a paper's DOI from its PDF text when adding a new article.
