@@ -68,7 +68,7 @@ setup(
         classifiers=classifiers,
         packages=find_packages(exclude=['scripts', 'config']),
         url="https://github.com/xilingchu/fileEM",
-        requires=['PyYAML', 'suds'],
+        install_requires=['PyYAML', 'requests'],
         scripts=['scripts/fileEm'],
         cmdclass={
             'install': InstallWithConfig,
